@@ -87,27 +87,12 @@ class WxpusherSender:
         """
         self._wxpusher_app_token = getattr(config, 'wxpusher_app_token', None)
         self._wxpusher_uid = getattr(config, 'wxpusher_uid', None)
-        self._wxpusher_ilink_uin = getattr(config, 'wxpusher_ilink_uin', None)
 
     def send_to_wxpusher(self, content: str, title: Optional[str] = None) -> bool:
         """
         推送消息到 WXPusher
 
-        推送策略（优先级递减）：
-        1. iLink 通道：如果配置了 WXPUSHER_ILINK_UIN，优先使用 iLink 推送至微信
-        2. UID 通道：降级方案，通过 WXPusher App 推送
-
-        iLink API 格式：
-        POST https://wxpusher.zjiecode.com/api/send/message/
-        {
-            "appToken": "用户Token",
-            "iLinkUins": ["iLink用户UIN"],
-            "content": "消息内容",
-            "contentType": 2,
-            "summary": "标题（微信消息列表显示）"
-        }
-
-        UID API 格式：
+        WXPusher API 格式：
         POST https://wxpusher.zjiecode.com/api/send/message/
         {
             "appToken": "用户Token",
@@ -128,80 +113,46 @@ class WxpusherSender:
             logger.warning("WXPusher APP Token 未配置，跳过推送")
             return False
 
+        if not self._wxpusher_uid:
+            logger.warning("WXPusher UID 未配置，跳过推送")
+            return False
+
         api_url = "https://wxpusher.zjiecode.com/api/send/message/"
 
         if title is None:
             date_str = datetime.now().strftime('%Y-%m-%d')
             title = f"股票分析报告 - {date_str}"
 
-        if self._wxpusher_ilink_uin:
-            ilink_uins = [u.strip() for u in self._wxpusher_ilink_uin.split(',') if u.strip()]
-            if ilink_uins:
-                logger.info(f"优先使用 iLink 通道推送，目标 UIN: {ilink_uins}")
-                html_content = _markdown_to_html(content)
-                ilink_payload = {
-                    "appToken": self._wxpusher_app_token,
-                    "iLinkUins": ilink_uins,
-                    "content": html_content,
-                    "contentType": 2,
-                    "summary": title,
-                }
-                if self._send_via_ilink(api_url, ilink_payload):
-                    return True
-                logger.warning("iLink 通道推送失败，尝试降级到 UID 通道")
-
-        if not self._wxpusher_uid:
-            logger.warning("WXPusher UID 未配置，且 iLink 通道不可用，跳过推送")
-            return False
-
         uids = [uid.strip() for uid in self._wxpusher_uid.split(',') if uid.strip()]
         if not uids:
             logger.warning("WXPusher UID 格式无效，跳过推送")
             return False
 
-        logger.info(f"使用 UID 通道降级推送，目标 UID: {uids}")
         html_content = _markdown_to_html(content)
-        uid_payload = {
+
+        payload = {
             "appToken": self._wxpusher_app_token,
             "uids": uids,
             "content": html_content,
             "contentType": 2,
             "title": title,
         }
-        return self._send_via_uid(api_url, uid_payload)
 
-    def _send_via_ilink(self, api_url: str, payload: dict) -> bool:
-        """通过 iLink 通道发送请求"""
         try:
             response = requests.post(api_url, json=payload, timeout=10)
             result = response.json()
+
             if response.status_code == 200 and result.get('code') == 1000:
-                logger.info("WXPusher iLink 推送成功")
+                logger.info("WXPusher 消息发送成功")
                 return True
+
             error_msg = result.get('msg', '未知错误')
-            logger.error(f"WXPusher iLink 返回错误: {error_msg}")
-            return False
-        except requests.exceptions.Timeout:
-            logger.error("WXPusher iLink 请求超时")
-            return False
-        except Exception as e:
-            logger.error(f"发送 WXPusher iLink 消息失败: {e}")
+            logger.error(f"WXPusher 返回错误: {error_msg}")
             return False
 
-    def _send_via_uid(self, api_url: str, payload: dict) -> bool:
-        """通过 UID 通道发送请求"""
-        try:
-            response = requests.post(api_url, json=payload, timeout=10)
-            result = response.json()
-            if response.status_code == 200 and result.get('code') == 1000:
-                logger.info("WXPusher UID 推送成功")
-                return True
-            error_msg = result.get('msg', '未知错误')
-            logger.error(f"WXPusher UID 返回错误: {error_msg}")
-            return False
         except requests.exceptions.Timeout:
-            logger.error("WXPusher UID 请求超时")
+            logger.error("WXPusher 请求超时")
             return False
         except Exception as e:
-            logger.error(f"发送 WXPusher UID 消息失败: {e}")
+            logger.error(f"发送 WXPusher 消息失败: {e}")
             return False
