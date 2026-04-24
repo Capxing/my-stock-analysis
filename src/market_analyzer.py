@@ -632,8 +632,7 @@ Lagging: {bottom_sectors_text if bottom_sectors_text else "N/A"}"""
 - Output pure Markdown only
 - No JSON
 - No code blocks
-- Use emoji sparingly in headings (at most one per heading)
-- The entire fixed shell, headings, guidance, and conclusion must be in English
+- Limit emoji to one per heading only, headings only
 
 ---
 
@@ -662,26 +661,20 @@ Lagging: {bottom_sectors_text if bottom_sectors_text else "N/A"}"""
 
 ## {report_title}
 
-### 1. Market Summary
-(2-3 sentences summarizing overall market tone, index moves, and liquidity.)
+### 1. Market Overview
+(One sentence: key index moves, turnover, sentiment)
 
-### 2. Index Commentary
-({self._get_index_hint()})
+### 2. Index Performance
+(Table format, concise)
 
-### 3. Fund Flows
-(Interpret what turnover, participation, and flow signals imply.)
+### 3. Sector Dynamics
+(Key sector moves and logic, 1-2 sentences)
 
-### 4. Sector Highlights
-(Analyze the drivers behind the leading and lagging sectors or themes.)
+### 4. Outlook
+(Tomorrow's outlook, give a conclusion)
 
-### 5. Outlook
-(Provide the near-term outlook based on price action and news.)
-
-### 6. Risk Alerts
-(List the main risks to monitor.)
-
-### 7. Strategy Plan
-(Provide an offensive/balanced/defensive stance, a position-sizing guideline, one invalidation trigger, and end with “For reference only, not investment advice.”)
+### 5. Action Plan
+(Position sizing: light/half/full, 1-2 sentences)
 
 ---
 
@@ -695,7 +688,7 @@ Output the report content directly, no extra commentary.
 - 必须输出纯 Markdown 文本格式
 - 禁止输出 JSON 格式
 - 禁止输出代码块
-- emoji 仅在标题处少量使用（每个标题最多1个）
+- 严格控制 emoji 使用，每行最多1个，仅标题处使用
 
 ---
 
@@ -720,30 +713,24 @@ Output the report content directly, no extra commentary.
 
 ---
 
-# 输出格式模板（请严格按此格式输出）
+# 输出格式模板（请严格按此格式输出，简明扼要，每节不超过3-4行）
 
 ## {overview.date} 大盘复盘
 
-### 一、市场总结
-（2-3句话概括今日市场整体表现，包括指数涨跌、成交量变化）
+### 一、市场概况
+（一句话概括：主要指数涨跌、成交额、整体情绪）
 
-### 二、指数点评
-（{self._get_index_hint()}）
+### 二、指数表现
+（表格形式，简洁列出）
 
-### 三、资金动向
-（解读成交额流向的含义）
+### 三、板块动向
+（重点板块涨跌及逻辑，1-2句话）
 
-### 四、热点解读
-（分析领涨领跌板块背后的逻辑和驱动因素）
+### 四、后市看法
+（明日走势预判，给出结论）
 
-### 五、后市展望
-（结合当前走势和新闻，给出明日市场预判）
-
-### 六、风险提示
-（需要关注的风险点）
-
-### 七、策略计划
-（给出进攻/均衡/防守结论，对应仓位建议，并给出一个触发失效条件；最后补充“建议仅供参考，不构成投资建议”。）
+### 五、操作建议
+（仓位建议：轻仓/半仓/重仓，1-2句话）
 
 ---
 

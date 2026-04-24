@@ -6,7 +6,8 @@ WXPusher 发送提醒服务
 1. 通过 WXPusher API 发送消息
 """
 import logging
-from typing import Optional, List
+import re
+from typing import Optional
 from datetime import datetime
 import requests
 
@@ -14,6 +15,65 @@ from src.config import Config
 
 
 logger = logging.getLogger(__name__)
+
+
+def _markdown_to_html(text: str) -> str:
+    """
+    将 Markdown 文本转换为 HTML
+
+    支持：标题、加粗、斜体、链接、列表、表格、换行
+    """
+    lines = text.split('\n')
+    in_table = False
+    in_list = False
+    result_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith('|') and '|' in stripped[1:]:
+            if not in_table:
+                in_table = True
+                result_lines.append('<table>')
+            cols = [c.strip() for c in stripped.strip('|').split('|')]
+            if all(re.match(r'^-+$', c) for c in cols):
+                continue
+            result_lines.append('<tr>' + ''.join(f'<td>{c}</td>' for c in cols) + '</tr>')
+            continue
+        else:
+            if in_table:
+                in_table = False
+                result_lines.append('</table>')
+
+        if stripped.startswith('### '):
+            result_lines.append(f'<h3>{stripped[4:]}</h3>')
+        elif stripped.startswith('## '):
+            result_lines.append(f'<h2>{stripped[3:]}</h2>')
+        elif stripped.startswith('# '):
+            result_lines.append(f'<h1>{stripped[2:]}</h1>')
+        elif stripped.startswith('- ') or stripped.startswith('* '):
+            if not in_list:
+                in_list = True
+                result_lines.append('<ul>')
+            result_lines.append(f'<li>{stripped[2:]}</li>')
+        elif stripped == '' or stripped == '---':
+            result_lines.append('<br>')
+        else:
+            bold_line = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', stripped)
+            italic_line = re.sub(r'\*(.+?)\*', r'<em>\1</em>', bold_line)
+            link_line = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', italic_line)
+            result_lines.append(f'<p>{link_line}</p>')
+
+    if in_table:
+        result_lines.append('</table>')
+    if in_list:
+        result_lines.append('</ul>')
+
+    html = '\n'.join(result_lines)
+    html = re.sub(r'<br><br>', '<br>', html)
+    html = re.sub(r'<p><br>', '<p>', html)
+    html = re.sub(r'<br></p>', '</p>', html)
+    return html
 
 
 class WxpusherSender:
@@ -68,10 +128,12 @@ class WxpusherSender:
             logger.warning("WXPusher UID 格式无效，跳过推送")
             return False
 
+        html_content = _markdown_to_html(content)
+
         payload = {
             "appToken": self._wxpusher_app_token,
             "uids": uids,
-            "content": content,
+            "content": html_content,
             "contentType": 2,
             "title": title,
         }
