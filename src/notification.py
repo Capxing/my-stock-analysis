@@ -45,7 +45,8 @@ from src.notification_sender import (
     SlackSender,
     TelegramSender,
     WechatSender,
-    WECHAT_IMAGE_MAX_BYTES
+    WECHAT_IMAGE_MAX_BYTES,
+    WxpusherSender,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class NotificationChannel(Enum):
     EMAIL = "email"        # 邮件
     PUSHOVER = "pushover"  # Pushover（手机/桌面推送）
     PUSHPLUS = "pushplus"  # PushPlus（国内推送服务）
+    WXPUSHER = "wxpusher"  # WXPusher（微信推送）
     SERVERCHAN3 = "serverchan3"  # Server酱3（手机APP推送服务）
     CUSTOM = "custom"      # 自定义 Webhook
     DISCORD = "discord"    # Discord 机器人 (Bot)
@@ -84,6 +86,7 @@ class ChannelDetector:
             NotificationChannel.EMAIL: "邮件",
             NotificationChannel.PUSHOVER: "Pushover",
             NotificationChannel.PUSHPLUS: "PushPlus",
+            NotificationChannel.WXPUSHER: "WXPusher",
             NotificationChannel.SERVERCHAN3: "Server酱3",
             NotificationChannel.CUSTOM: "自定义Webhook",
             NotificationChannel.DISCORD: "Discord机器人",
@@ -105,7 +108,8 @@ class NotificationService(
     Serverchan3Sender,
     SlackSender,
     TelegramSender,
-    WechatSender
+    WechatSender,
+    WxpusherSender,
 ):
     """
     通知服务
@@ -159,6 +163,7 @@ class NotificationService(
         SlackSender.__init__(self, config)
         TelegramSender.__init__(self, config)
         WechatSender.__init__(self, config)
+        WxpusherSender.__init__(self, config)
 
         # 检测所有已配置的渠道
         self._available_channels = self._detect_all_channels()
@@ -288,6 +293,10 @@ class NotificationService(
         # PushPlus
         if self._pushplus_token:
             channels.append(NotificationChannel.PUSHPLUS)
+
+        # WXPusher
+        if self._wxpusher_app_token and self._wxpusher_uid:
+            channels.append(NotificationChannel.WXPUSHER)
 
        # Server酱3
         if self._serverchan3_sendkey:
@@ -1657,6 +1666,8 @@ class NotificationService(
                     result = self.send_to_pushover(content)
                 elif channel == NotificationChannel.PUSHPLUS:
                     result = self.send_to_pushplus(content)
+                elif channel == NotificationChannel.WXPUSHER:
+                    result = self.send_to_wxpusher(content)
                 elif channel == NotificationChannel.SERVERCHAN3:
                     result = self.send_to_serverchan3(content)
                 elif channel == NotificationChannel.CUSTOM:
