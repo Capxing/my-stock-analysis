@@ -1491,6 +1491,77 @@ class NotificationService(
 
         return "\n".join(lines)
 
+    def generate_wxpusher_report(
+        self,
+        results: List[AnalysisResult],
+        report_date: Optional[str] = None,
+    ) -> str:
+        """
+        生成 WXPusher 专用合并报告（中等详细度，合并为一条消息）
+
+        每只股票包含：股票概览 + 行情数据 + 核心结论 + 狙击点位
+        格式紧凑层次分明，适合微信推送
+
+        Args:
+            results: 分析结果列表
+            report_date: 报告日期（默认当天）
+
+        Returns:
+            Markdown 格式的合并报告
+        """
+        if report_date is None:
+            report_date = datetime.now().strftime('%Y-%m-%d')
+
+        if not results:
+            return ""
+
+        report_language = self._get_report_language(results)
+        labels = get_report_labels(report_language)
+
+        lines = [
+            f"# 📈 {report_date} 复盘",
+            "",
+        ]
+
+        for r in results:
+            signal_text, signal_emoji, _ = self._get_signal_level(r)
+            stock_name = self._get_display_name(r, report_language)
+            dashboard = r.dashboard if hasattr(r, 'dashboard') and r.dashboard else {}
+            core = dashboard.get('core_conclusion', {}) if dashboard else {}
+            battle = dashboard.get('battle_plan', {}) if dashboard else {}
+            intel = dashboard.get('intelligence', {}) if dashboard else {}
+
+            lines.append(f"**{stock_name}({r.code})**")
+            lines.append(f"  {signal_emoji} {localize_operation_advice(r.operation_advice, report_language)} | {labels['score_label']} {r.sentiment_score} | {localize_trend_prediction(r.trend_prediction, report_language)}")
+
+            snapshot = getattr(r, 'market_snapshot', None)
+            if snapshot:
+                close = snapshot.get('close', 'N/A')
+                pct_chg = snapshot.get('pct_chg', 'N/A')
+                volume = snapshot.get('volume', 'N/A')
+                amount = snapshot.get('amount', 'N/A')
+                lines.append(f"  ┌ 收盘 {close} | 涨跌幅 {pct_chg}% | 成交量 {volume} | 成交额 {amount}")
+                ma5 = snapshot.get('ma5', 'N/A')
+                ma10 = snapshot.get('ma10', 'N/A')
+                ma20 = snapshot.get('ma20', 'N/A')
+                lines.append(f"  └ MA5 {ma5} | MA10 {ma10} | MA20 {ma20}")
+
+            one_sentence = (core.get('one_sentence') or r.analysis_summary or '')[:150]
+            if one_sentence:
+                lines.append(f"  📌 {one_sentence}")
+
+            sniper = battle.get('sniper_points', {}) if battle else {}
+            if sniper:
+                ideal = sniper.get('ideal_buy', '-')
+                stop = sniper.get('stop_loss', '-')
+                target = sniper.get('take_profit', '-')
+                if ideal != '-' or stop != '-' or target != '-':
+                    lines.append(f"  🎯 理想买 {ideal} | 止损 {stop} | 目标 {target}")
+
+            lines.append("")
+
+        return "\n".join(lines)
+
     # Display name mapping for realtime data sources
     _SOURCE_DISPLAY_NAMES = {
         "tencent": {"zh": "腾讯财经", "en": "Tencent Finance"},
