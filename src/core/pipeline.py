@@ -1660,8 +1660,10 @@ class StockAnalysisPipeline:
                             result = self.notifier.send_to_slack(report)
                         non_wechat_success = result or non_wechat_success
                     elif channel == NotificationChannel.WXPUSHER:
-                        brief_report = self.notifier.generate_brief_report(results)
-                        non_wechat_success = self.notifier.send_to_wxpusher(brief_report) or non_wechat_success
+                        for result in results:
+                            single_report = self.notifier.generate_single_stock_report(result)
+                            self.notifier.send_to_wxpusher(single_report, title="复盘")
+                        non_wechat_success = True
                     else:
                         logger.warning(f"未知通知渠道: {channel}")
 
