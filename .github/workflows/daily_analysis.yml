@@ -174,6 +174,7 @@ jobs:
           # WXPusher 推送
           WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
           WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+          WXPUSHER_ILINK_UIN: ${{ secrets.WXPUSHER_ILINK_UIN }}
 
           # ==========================================
           # 自选股配置

@@ -612,6 +612,7 @@ class Config:
     # WXPusher 推送配置
     wxpusher_app_token: Optional[str] = None  # WXPusher App Token
     wxpusher_uid: Optional[str] = None  # WXPusher 用户 UID（支持多个，逗号分隔）
+    wxpusher_ilink_uin: Optional[str] = None  # WXPusher iLink UIN（支持多个，逗号分隔，优先于 UID）
 
     # Server酱3 推送配置
     serverchan3_sendkey: Optional[str] = None  # Server酱3 SendKey
@@ -1244,6 +1245,7 @@ class Config:
             pushplus_topic=os.getenv('PUSHPLUS_TOPIC'),
             wxpusher_app_token=os.getenv('WXPUSHER_APP_TOKEN'),
             wxpusher_uid=os.getenv('WXPUSHER_UID'),
+            wxpusher_ilink_uin=os.getenv('WXPUSHER_ILINK_UIN'),
             serverchan3_sendkey=os.getenv('SERVERCHAN3_SENDKEY'),
             custom_webhook_urls=[u.strip() for u in os.getenv('CUSTOM_WEBHOOK_URLS', '').split(',') if u.strip()],
             custom_webhook_bearer_token=os.getenv('CUSTOM_WEBHOOK_BEARER_TOKEN'),
